@@ -1,44 +1,78 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-import torch
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+import streamlit as st
+from langchain.document_loaders.csv_loader import CSVLoader
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.prompts import PromptTemplate
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import LLMChain
+from dotenv import load_dotenv
+loader = CSVLoader(file_path="/content/passport_application_qa.csv")
+documents = loader.load()
 
-# Load the tokenizer and the model
-tokenizer = GPT2Tokenizer.from_pretrained("path/to/your/model-directory")
-model = GPT2LMHeadModel.from_pretrained("path/to/your/model-directory")
+embeddings = OpenAIEmbeddings(api_key="sk-None-rUYkZaXDaH3nhHEDA6yLT3BlbkFJp9Gqse7Wj0JPmSdH0pv2")
+db = FAISS.from_documents(documents, embeddings)
 
-# Move model to GPU if available
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model.to(device)
+def retrieve_info(query):
+    similar_response = db.similarity_search(query, k=3)
 
-app = FastAPI()
+    page_contents_array = [doc.page_content for doc in similar_response]
 
-class Prompt(BaseModel):
-    prompt: str
+    # print(page_contents_array)
 
-def generate_response(prompt):
-    inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=128)
-    input_ids = inputs.input_ids.to(device)
-    attention_mask = inputs.attention_mask.to(device)
-    outputs = model.generate(
-        input_ids,
-        attention_mask=attention_mask,
-        max_length=150,
-        num_return_sequences=1,
-        pad_token_id=tokenizer.eos_token_id,
-        temperature=0.7,
-        top_k=50,
-        top_p=0.9,
-        do_sample=True
-    )
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return page_contents_array
+llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo", api_key="sk-None-rUYkZaXDaH3nhHEDA6yLT3BlbkFJp9Gqse7Wj0JPmSdH0pv2")
+
+template = """
+You are a highly knowledgeable and efficient embassy helper chatbot.
+I will share a query from a user with you, and you will provide the best response 
+that follows all the rules and best practices below:
+
+1/ The response should closely follow the established best practices in terms of length, tone of voice, logical structure, and detailed information.
+
+2/ If the best practice is irrelevant to the query, try to mimic the style of the best practice to formulate the response.
+
+3/ You should only respond to queries related to embassy services. If you do not know the answer or the query is outside the scope of embassy services, you should politely apologize and indicate that you do not have the information.
+
+Below is a query I received from the user:
+{message}
+
+Here is a list of best practices of how we normally respond to users in similar scenarios:
+{best_practice}
+
+Please write the best response that I should send to this user:
+"""
+
+# Example usage in your script
+prompt_template = PromptTemplate(template=template, input_variables=["message", "best_practice"])
+
+prompt = PromptTemplate(
+    input_variables=["message", "best_practice"],
+    template=template
+)
+
+chain = LLMChain(llm=llm, prompt=prompt)
+
+def generate_response(message):
+    best_practice = retrieve_info(message)
+    response = chain.run(message=message, best_practice=best_practice)
     return response
 
-@app.post("/generate/")
-async def generate(prompt: Prompt):
-    response = generate_response(prompt.prompt)
-    return {"response": response}
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to the embassy chatbot API"}
+
+def main():
+    st.set_page_config(
+        page_title="Customer response generator", page_icon=":bird:")
+
+    st.header("Customer response generator :bird:")
+    message = st.text_area("customer message")
+
+    if message:
+        st.write("Generating best practice message...")
+
+        result = generate_response(message)
+
+        st.info(result)
+
+
+if __name__ == '__main__':
+    main()
