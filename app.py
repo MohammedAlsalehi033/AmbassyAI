@@ -6,10 +6,20 @@ from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Retrieve the API key from the .env file
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+# Load the CSV file
 loader = CSVLoader(file_path="./passport_application_qa.csv")
 documents = loader.load()
 
-embeddings = OpenAIEmbeddings(api_key="sk-None-rUYkZaXDaH3nhHEDA6yLT3BlbkFJp9Gqse7Wj0JPmSdH0pv2")
+# Initialize embeddings with the API key
+embeddings = OpenAIEmbeddings(api_key=openai_api_key)
 db = FAISS.from_documents(documents, embeddings)
 
 def retrieve_info(query):
@@ -17,10 +27,10 @@ def retrieve_info(query):
 
     page_contents_array = [doc.page_content for doc in similar_response]
 
-    # print(page_contents_array)
-
     return page_contents_array
-llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo", api_key="sk-None-rUYkZaXDaH3nhHEDA6yLT3BlbkFJp9Gqse7Wj0JPmSdH0pv2")
+
+# Initialize the LLM with the API key
+llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo", api_key=openai_api_key)
 
 template = """
 You are a highly knowledgeable and efficient embassy helper chatbot.
@@ -57,8 +67,6 @@ def generate_response(message):
     response = chain.run(message=message, best_practice=best_practice)
     return response
 
-
-
 def main():
     st.set_page_config(
         page_title="Customer response generator", page_icon=":bird:")
@@ -72,7 +80,6 @@ def main():
         result = generate_response(message)
 
         st.info(result)
-
 
 if __name__ == '__main__':
     main()
