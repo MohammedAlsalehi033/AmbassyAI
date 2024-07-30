@@ -12,14 +12,13 @@ import os
 load_dotenv()
 
 # Retrieve the API key from the .env file
-openai_api_key = os.getenv("OPENAI_API_KEY")
 
 # Load the CSV file
 loader = CSVLoader(file_path="./passport_application_qa.csv")
 documents = loader.load()
 
 # Initialize embeddings with the API key
-embeddings = OpenAIEmbeddings(api_key=openai_api_key)
+embeddings = OpenAIEmbeddings()
 db = FAISS.from_documents(documents, embeddings)
 
 def retrieve_info(query):
@@ -30,7 +29,7 @@ def retrieve_info(query):
     return page_contents_array
 
 # Initialize the LLM with the API key
-llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo", api_key=openai_api_key)
+llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
 
 template = """
 You are a highly knowledgeable and efficient embassy helper chatbot.
