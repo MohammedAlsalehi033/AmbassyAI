@@ -68,13 +68,13 @@ def generate_response(message):
 
 def main():
     st.set_page_config(
-        page_title="Customer response generator", page_icon=":bird:")
+        page_title="Digital ambassador", page_icon="📄")
 
-    st.header("Customer response generator :bird:")
+    st.header("Digital ambassador 📄")
     message = st.text_area("customer message")
 
     if message:
-        st.write("Generating best practice message...")
+        st.write("Generating Response...")
 
         result = generate_response(message)
 
