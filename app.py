@@ -6,7 +6,7 @@ from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from dotenv import load_dotenv
-loader = CSVLoader(file_path="/content/passport_application_qa.csv")
+loader = CSVLoader(file_path="./passport_application_qa.csv")
 documents = loader.load()
 
 embeddings = OpenAIEmbeddings(api_key="sk-None-rUYkZaXDaH3nhHEDA6yLT3BlbkFJp9Gqse7Wj0JPmSdH0pv2")
