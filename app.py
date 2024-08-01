@@ -47,17 +47,15 @@ that follows all the rules and best practices below:
 Below is a query I received from the user:
 {message}
 
-Here is a list of best practices of how we normally respond to users in similar scenarios:
-{best_practice}
 
 Please write the best response
 """
 
 # Example usage in your script
-prompt_template = PromptTemplate(template=template, input_variables=["message", "best_practice"])
+prompt_template = PromptTemplate(template=template, input_variables=["message"])
 
 prompt = PromptTemplate(
-    input_variables=["message", "best_practice"],
+    input_variables=["message"],
     template=template
 )
 
