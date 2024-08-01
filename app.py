@@ -23,10 +23,8 @@ db = FAISS.from_documents(documents, embeddings)
 
 def retrieve_info(query):
     similar_response = db.similarity_search(query, k=5)
-
     page_contents_array = [doc.page_content for doc in similar_response]
-
-    return page_contents_array
+    return " ".join(page_contents_array)
 
 # Initialize the LLM with the API key
 llm = ChatOpenAI(temperature=0.4, model="gpt-3.5-turbo")
@@ -44,8 +42,7 @@ that follows all the rules and best practices below:
 5. Your response should be according to the language of the user.
 6. Respond in Arabic if not specified.
 
-Example Query: "What are the requirements for a passport application?"
-Example Response: "لتقديم طلب للحصول على جواز سفر، يجب عليك تقديم جواز السفر الحالي، وإثبات الهوية، وصورتين شخصيتين. إذا كنت تقدم لأول مرة، فقد تحتاج أيضًا إلى تقديم شهادة الميلاد. يُرجى زيارة السفارة لمزيد من التفاصيل."
+Context: {context}
 
 Below is a query I received from the user:
 {message}
@@ -54,18 +51,13 @@ Please write the best response.
 """
 
 # Example usage in your script
-prompt_template = PromptTemplate(template=template, input_variables=["message"])
+prompt_template = PromptTemplate(template=template, input_variables=["message", "context"])
 
-prompt = PromptTemplate(
-    input_variables=["message"],
-    template=template
-)
-
-chain = LLMChain(llm=llm, prompt=prompt)
+chain = LLMChain(llm=llm, prompt=prompt_template)
 
 def generate_response(message):
-    best_practice = retrieve_info(message)
-    response = chain.run(message=message, best_practice=best_practice)
+    context = retrieve_info(message)
+    response = chain.run(message=message, context=context)
     return response
 
 def main():
@@ -73,7 +65,7 @@ def main():
         page_title="Digital ambassador", page_icon="📄")
 
     st.header("Digital ambassador 📄")
-    message = st.text_area("customer message")
+    message = st.text_area("Customer message")
 
     if message:
         st.write("Generating Response...")
