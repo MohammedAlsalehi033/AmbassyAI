@@ -6,3 +6,6 @@ langchain
 faiss-cpu
 tiktoken
 langchain-community
+sentence-transformers
+pandas
+pickle

@@ -1,7 +1,8 @@
 import streamlit as st
 from langchain.document_loaders.csv_loader import CSVLoader
-from langchain.vectorstores import FAISS
-from langchain.embeddings.openai import OpenAIEmbeddings
+from sentence_transformers import SentenceTransformer
+import faiss
+import pickle
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
@@ -11,20 +12,38 @@ import os
 # Load environment variables from .env file
 load_dotenv()
 
-# Retrieve the API key from the .env file
+
 
 # Load the CSV file
 loader = CSVLoader(file_path="./passport_application_qa.csv")
 documents = loader.load()
 
-# Initialize embeddings with the API key
-embeddings = OpenAIEmbeddings()
-db = FAISS.from_documents(documents, embeddings)
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+document_texts = [doc.page_content for doc in documents]
+
+document_embeddings = model.encode(document_texts)
+
+# Save embeddings and documents
+with open('/path/to/save/documents.pkl', 'wb') as f:
+    pickle.dump(document_texts, f)
+
+with open('/path/to/save/embeddings.pkl', 'wb') as f:
+    pickle.dump(document_embeddings, f)
+
+# Create FAISS index
+d = document_embeddings.shape[1]
+index = faiss.IndexFlatL2(d)
+index.add(document_embeddings)
+
+# Save FAISS index
+faiss.write_index(index, '/path/to/save/faiss_index.index')
 
 def retrieve_info(query):
-    similar_response = db.similarity_search(query, k=5)
-    page_contents_array = [doc.page_content for doc in similar_response]
-    return " ".join(page_contents_array)
+    query_embedding = model.encode([query])
+    D, I = index.search(query_embedding, k=5)
+    results = [document_texts[i] for i in I[0]]
+    return " ".join(results)
 
 # Initialize the LLM with the API key
 llm = ChatOpenAI(temperature=0.4, model="gpt-3.5-turbo")
