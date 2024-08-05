@@ -25,10 +25,10 @@ document_texts = [doc.page_content for doc in documents]
 document_embeddings = model.encode(document_texts)
 
 # Save embeddings and documents
-with open('/path/to/save/documents.pkl', 'wb') as f:
+with open('./documents.pkl', 'wb') as f:
     pickle.dump(document_texts, f)
 
-with open('/path/to/save/embeddings.pkl', 'wb') as f:
+with open('./embeddings.pkl', 'wb') as f:
     pickle.dump(document_embeddings, f)
 
 # Create FAISS index
@@ -37,7 +37,7 @@ index = faiss.IndexFlatL2(d)
 index.add(document_embeddings)
 
 # Save FAISS index
-faiss.write_index(index, '/path/to/save/faiss_index.index')
+faiss.write_index(index, './faiss_index.index')
 
 def retrieve_info(query):
     query_embedding = model.encode([query])
